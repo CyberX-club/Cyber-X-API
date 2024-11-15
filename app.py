@@ -132,24 +132,24 @@ header_mappings = {
     }
 }
 
-# def parse_spreadsheet_data(data, entity_type):
-#     if not data or len(data) < 2:
-#         print("No data found")
-#         return []
+def parse_spreadsheet_data_0(data, entity_type):
+    if not data or len(data) < 2:
+        print("No data found")
+        return []
 
-#     header_mapping = header_mappings[entity_type]
-#     headers = data[0]
-#     entities = []
+    header_mapping = header_mappings[entity_type]
+    headers = data[0]
+    entities = []
 
-#     for row in data[1:]:
-#         entity_data = {header_mapping[header]: (value if value else '') for header, value in zip(headers, row)}
+    for row in data[1:]:
+        entity_data = {header_mapping[header]: (value if value else '') for header, value in zip(headers, row)}
         
-#         if entity_type == 'articles':
-#             entities.append(Article(**entity_data))
-#         elif entity_type == 'resources':
-#             entities.append(Resource(**entity_data))
+        if entity_type == 'articles':
+            entities.append(Article(**entity_data))
+        elif entity_type == 'resources':
+            entities.append(Resource(**entity_data))
 
-#     return entities
+    return entities
 
 
 def parse_spreadsheet_data(data, entity_name):
@@ -192,7 +192,7 @@ def magazine_data(slug):
 
     try:
         data = Endpoint(magazine_base_url, "GET").fetch()[0]['values']
-        articles = parse_spreadsheet_data(data, 'articles')
+        articles = parse_spreadsheet_data_0(data, 'articles')
 
         for article in articles:
             if article.url == slug:
@@ -222,7 +222,7 @@ def resources():
 
     try:
         data = Endpoint(resources_base_url, "GET").fetch()[0]['values']
-        resources = parse_spreadsheet_data(data, 'resources')
+        resources = parse_spreadsheet_data_0(data, 'resources')
         return jsonify({
             "resources": [resource.to_dict() for resource in resources]
         })
