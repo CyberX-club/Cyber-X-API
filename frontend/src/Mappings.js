@@ -1,5 +1,6 @@
 import { Box, Typography, Accordion, AccordionSummary, AccordionDetails, Table, TableBody, TableCell, TableHead, TableRow, IconButton, Button } from "@mui/material";
 import { useEffect, useState } from "react";
+import Grid from '@mui/material/Grid2';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';  // Icon for accordion
 import Endpoints from "./Endpoints";
 
@@ -20,10 +21,18 @@ const Mappings = () => {
             <Typography variant="h4">Mappings</Typography>
             {mappings.map((mapping) => (
                 <Accordion key={mapping.id}>
-                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                        <Typography variant="h6">{mapping.name}</Typography>
-                        <Button href={`/mappings/${mapping._id}`} variant="outlined">Edit</Button>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />} >
+                        <Grid container spacing={2}>
+                            <Grid size={12}>
+                                <Typography variant="h6">{mapping.name}:{mapping._id}</Typography>
+                            </Grid>
+                            <Grid>
+                                <Button href={`/mappings/${mapping._id}`} variant="outlined"  fullWidth>Edit</Button>    
+                            </Grid>
+                        </Grid>
+                        
                     </AccordionSummary>
+                    
                     <AccordionDetails>
                         {/* Render a table for each mapping */}
                         {mapping.mappings ? (

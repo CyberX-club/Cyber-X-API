@@ -6,6 +6,7 @@ import ContactMailIcon from '@mui/icons-material/ContactMail';
 import Navbar from './Navbar';
 import Mappings from './Mappings';
 import Mapping from './Mapping';
+import NewAlbum from './newAlbum';
 
 
 const MyRoutes = () => {
@@ -21,9 +22,9 @@ const MyRoutes = () => {
           href: '/mappings',
           icon: <InfoIcon />,
         },
-        contact: {
-          label: 'Contact',
-          href: '/contact',
+        newAlbum: {
+          label: 'New Album',
+          href: '/newAlbum',
           icon: <ContactMailIcon />,
         },
       };
@@ -36,7 +37,7 @@ const MyRoutes = () => {
                 <Route path="/" element={<App/>} />
                 <Route path="/mappings" element={<Mappings/>} />
                 <Route path="/mappings/:slug" element={<Mapping/>} />
-                <Route path="/contact" element={null} />
+                <Route path="/newAlbum" element={<NewAlbum/>} />
             </Routes>
         </BrowserRouter>
     );

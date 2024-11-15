@@ -9,10 +9,16 @@ class Endpoints:
         get_magazaine_data = '/magazine/<slug>'
         get_resources = '/resources'
         get_random_image = '/random-image'
-        create_image_folder = '/image/new/<folder>v'
+        
+        create_image_folder = '/image/new/<folder>'
+
 
         get_mappings = '/api/mappings'
+        get_mapping_for_id = '/api/mappings/<id>'
         data = '/api/data/<id>'
+
+
+        new_album = '/api/album/new'
 
         class Spreadsheet:
             create = '/api/spreadsheet/new/<id>'
@@ -34,10 +40,16 @@ class Endpoints:
     class Imgur:
         imgur_base_url = "https://api.imgur.com/3"
         album = "/album"
+        album_schema = Schema({
+            "title": {"type": str},
+            "description": {"type": str},
+            "album_id": {"type": str}
+        })
 
         def __init__(self,api_key):
             self.api_key = api_key
-            
+        
+        
 
         def create_album_endpoint(self,title,description):
             return Endpoint(

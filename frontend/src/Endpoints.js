@@ -4,7 +4,9 @@ class Endpoints{
 
     static CREATE_SPREADSHEET = (id) => `${Endpoints.BASE_URL}/spreadsheet/new/${id}`;
     static MAPPINGS = `${Endpoints.BASE_URL}/mappings`;
+    static MAPPING = (id) => `${Endpoints.BASE_URL}/mappings/${id}`;    
     
+    static NEW_ALBUM = `${Endpoints.BASE_URL}/album/new`;
 
 
 }

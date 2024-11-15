@@ -14,11 +14,14 @@ app = Flask(__name__)
 # Enable CORS for all routes
 CORS(app)
 IMAGES_DIR = f'{os.path.dirname(__file__)}/{"images"}'
+SHEETS_DATA_COL = 'sheets_data'
+ALBUM = 'images_album'
+IMAGES = 'images'
 
 key = os.environ['SHEETS_API_KEY']
 
 db.set_db(os.environ.get('DB_NAME', 'CyberX'))
-db.set_collection('sheets_data')
+db.set_collection(SHEETS_DATA_COL)
 
 
 
@@ -238,7 +241,7 @@ def resources():
 @app.route(Endpoints.Local.data)
 def get_data(id):
     try:
-        db.set_collection('sheets_data')
+        db.set_collection(SHEETS_DATA_COL)
 
         data = db.get_object({"_id": id})
 
@@ -247,20 +250,6 @@ def get_data(id):
                 "error": "Data not found"
             })
         else:
-            # construct mappings from data.mappings 
-            #   "mappings": [
-            #         {
-            #         "id": 84465,
-            #         "python_header": "123123123",
-            #         "sheets_header": "12e457"
-            #         },
-            #         {
-            #         "id": 47971,
-            #         "python_header": "345435435",
-            #         "sheets_header": "3123123"
-            #         }
-            #     ],
-
             mappings = {mapping['sheets_header']:mapping['python_header'] for mapping in data.mappings}
             header_mappings[id] = mappings
             data  = Endpoint(Endpoints.spreadsheet_base_url(id, key, "A1:100"), "GET").fetch()[0]['values']
@@ -287,12 +276,12 @@ def create_new_spreadsheet_data(id):
         id = data.get('id')
         mappings = data.get('mappings')
 
-        if not name or not mappings or not id:
+        if  not id:
             return jsonify({
                 "error": "Invalid data"
             })
         
-        db.set_collection('sheets_data')
+        db.set_collection(SHEETS_DATA_COL)
 
         data_object = DbObject(Endpoints.Local.Spreadsheet.create_schema,True)
         data_object.name = name
@@ -316,7 +305,7 @@ def create_new_spreadsheet_data(id):
 @app.route(Endpoints.Local.get_mappings)
 def get_mappings():
     try:
-        db.set_collection('sheets_data')
+        db.set_collection(SHEETS_DATA_COL)
         mappings = db.get_objects({})
         return jsonify(
             [mapping.compile() for mapping in mappings]
@@ -326,5 +315,42 @@ def get_mappings():
             "error": str(e)
         })
 
+@app.route(Endpoints.Local.get_mapping_for_id)
+def get_mapping_for_id(id):
+    try:
+        db.set_collection(SHEETS_DATA_COL)
+        mapping = db.get_object({"_id": id})
+        return jsonify(mapping.compile())
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        })
+
+
+@app.route(Endpoints.Local.new_album, methods=['POST'])
+def new_album():
+    try:
+        data = request.json
+        title = data.get('title')
+        description = data.get('description')
+
+        album = imgur.create_album_endpoint(title, description)
+        response = album.fetch()[0]
+
+        # obj = DbObject(Endpoints.Imgur.album_schema, True)
+        # obj.title = title
+        # obj.description = description
+        # obj.album_id = response['id']
+
+        # db.set_collection(ALBUM)
+        # db.insert(obj)
+
+
+        return jsonify(response)
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        })
+
 if __name__=="__main__":
-    app.run()
+    app.run(debug=True)
