@@ -7,13 +7,31 @@ import {
   Stack,
   Box 
 } from '@mui/material';
+import Endpoints from './Endpoints';
 
 const NewAlbum = () => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
 
     const handleSubmit = () => {
-        console.log({ title, description });
+        fetch(Endpoints.NEW_ALBUM,{
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: title,
+                description: description
+            })
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            console.log(data);
+        })
+        .catch((error) => {
+            console.error(error);
+        });
+
     };
 
     return (

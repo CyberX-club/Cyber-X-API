@@ -43,7 +43,8 @@ class Endpoints:
         album_schema = Schema({
             "title": {"type": str},
             "description": {"type": str},
-            "album_id": {"type": str}
+            "album_id": {"type": str},
+            "deletehash": {"type": str}
         })
 
         def __init__(self,api_key):

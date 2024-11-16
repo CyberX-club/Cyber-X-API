@@ -335,15 +335,18 @@ def new_album():
         description = data.get('description')
 
         album = imgur.create_album_endpoint(title, description)
-        response = album.fetch()[0]
+        response = album.fetch()[0]['data']
 
-        # obj = DbObject(Endpoints.Imgur.album_schema, True)
-        # obj.title = title
-        # obj.description = description
-        # obj.album_id = response['id']
+        
 
-        # db.set_collection(ALBUM)
-        # db.insert(obj)
+        obj = DbObject(Endpoints.Imgur.album_schema, True)
+        obj.title = title
+        obj.description = description
+        obj.album_id = response['id']
+        obj.deletehsh = response['deletehash']
+
+        db.set_collection(ALBUM)
+        db.insert(obj)
 
 
         return jsonify(response)
