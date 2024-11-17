@@ -4,6 +4,8 @@ import { DataGrid, GridDeleteIcon } from '@mui/x-data-grid';
 import { useParams } from 'react-router-dom';
 import Endpoints  from './Endpoints';
 import { useEffect, useState } from 'react';
+import LoginHandler from './LoginHandler';
+import InfoDialog from './Dialog';
 
 const Mapping = () => {
   const { slug } = useParams();
@@ -18,6 +20,9 @@ const Mapping = () => {
   const [newRow, setNewRow] = useState({ sheets_header: '', python_header: '' });
   const [rows, setRows] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
+  const [token, setToken] = useState('');
+  const [infoDialogData, setInfoDialogData] = useState({ open: false, title: '', content: '' });
+  LoginHandler.setInfoOrToken(setInfoDialogData, setToken);
 
 
   const changeHandler = (e, type) => {
@@ -32,17 +37,13 @@ const Mapping = () => {
         setRows([...rows, { id: randomId(), ...newRow }]);
         setNewRow({ sheets_header: '', python_header: '' });
         break;
+
       case 'submit':
-        const data = {
-          name: name,
-          id: slug,
-          mappings: rows
-        };
+        const data = {name: name, id: slug, mappings: rows};
+
         fetch(Endpoints.CREATE_SPREADSHEET(slug), {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: {'Authorization': `${token}`},
           body: JSON.stringify(data)
         })
         .then((response) => response.json())
@@ -69,7 +70,11 @@ const Mapping = () => {
   };
 
   useEffect(() => {
-    fetch(Endpoints.MAPPING(slug))
+    fetch(Endpoints.MAPPING(slug),{
+      headers: {
+        'Authorization': `${token}`,
+      }
+    })
     .then((response) => response.json())
     .then((data) => {
       setName(data.name);
@@ -79,10 +84,11 @@ const Mapping = () => {
     .catch((error) => {
       console.error(error);
     });
-  }, [slug]);
+  }, [slug,token]);
 
   return (
     <Box style={{ height: 400, width: '100%' }} p={2} >
+      <InfoDialog {...infoDialogData} />
       <Typography variant="h4" gutterBottom>
         Mapping Name
       </Typography>
@@ -141,7 +147,7 @@ const Mapping = () => {
       />
         <Paper m={2}>
             <Grid container spacing={2} p={2}>
-                <IconButton onClick={null} disabled={selectedRows.length <= 0 } onClick={
+                <IconButton disabled={selectedRows.length <= 0 } onClick={
                     () => {
                         let newRows = [...rows];
                         selectedRows.map((row) => {

@@ -19,7 +19,13 @@ class Endpoints:
 
 
         new_album = '/api/album/new'
+        get_albums = '/api/album'
+        get_images_in_album = '/api/album/<album_id>'
+        delete_image = '/api/image/<image_id>/delete'
+        upload_image = '/api/image/<album_id>/upload'
 
+        admin = '/api/admin'
+        
         class Spreadsheet:
             create = '/api/spreadsheet/new/<id>'
             get_headers = '/api/spreadsheet/headers'
@@ -35,6 +41,13 @@ class Endpoints:
     spreadsheet_base_url = lambda spreadsheetId, key, range: f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}?key={key}"
     magazine_base_url = lambda spreadsheetId, key, range: f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}?key={key}"
     resources_base_url = lambda spreadsheetId, key, range: f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheetId}/values/{range}?key={key}"
+    
+    class Users:
+        admin_user_schema = Schema({
+            "email": {"type": str},
+        })
+
+        
 
     # Immgur API endpoints
     class Imgur:
@@ -47,8 +60,15 @@ class Endpoints:
             "deletehash": {"type": str}
         })
 
+        image_schema = Schema({
+            "_id": {"type": str},
+            "deletehash": {"type": str},
+            "data": {"type": dict}
+        })
+
         def __init__(self,api_key):
             self.api_key = api_key
+            self.headers={"Authorization": f"Client-ID {self.api_key}"}
         
         
 
@@ -56,14 +76,71 @@ class Endpoints:
             return Endpoint(
             url=f"{self.imgur_base_url}{self.album}",
             method="POST",
-            headers={
-                "Authorization": f"Client-ID {self.api_key}"
-            },
+            headers=self.headers,
             payload={
                 "title": title,
                 "description": description
             }
         )
+
+        def upload_image_endpoint(self,image_path=None,image_content=None,title=None,description=None,album_id=None):
+            try:
+                payload = {}
+
+                if title:
+                    payload["title"] = title
+                if description:
+                    payload["description"] = description
+                if album_id:
+                    payload["album"] = album_id
+                if not image_content and image_path:
+                    with open(image_path, "rb") as image_file:
+                        image_data = image_file.read()
+                else:
+                    image_data = image_content
+
+                return Endpoint(
+                    url=f"{self.imgur_base_url}/image",
+                    method="POST",
+                    headers=self.headers,
+                    payload=payload,
+                    files={
+                        "image": image_data
+                    }
+                )
+            except FileNotFoundError:
+                print(f"File not found: {image_path}")
+                return {"error": "File not found"}
+            except Exception as e:
+                print(f"Error uploading image: {e}")
+                return {"error": "Error uploading image"}
+
+        def move_image_to_album_endpoint(self,image_id,album_id):
+            return Endpoint(
+                url=f"{self.imgur_base_url}/album/{album_id}/add",
+                method="POST",
+                headers=self.headers,
+                payload={
+                     "deletehashes[]"  : image_id
+                    }
+            )
+        
+        def get_images_in_album_endpoint(self,album_hash):
+            return Endpoint(
+                url=f"{self.imgur_base_url}/album/{album_hash}/images",
+                method="GET",
+                headers=self.headers
+            )
+
+        def delete_image_endpoint(self,image_hash):
+            return Endpoint(
+                url=f"{self.imgur_base_url}/image/{image_hash}",
+                method="DELETE",
+                headers=self.headers
+            )
+
+
+        
     
     
 

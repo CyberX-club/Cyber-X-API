@@ -4,3 +4,4 @@ gunicorn
 flask_cors
 python-dotenv
 pymongo
+firebase-admin

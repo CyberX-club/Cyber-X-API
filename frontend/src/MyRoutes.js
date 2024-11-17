@@ -3,13 +3,20 @@ import App from './App';
 import HomeIcon from '@mui/icons-material/Home';
 import InfoIcon from '@mui/icons-material/Info';
 import ContactMailIcon from '@mui/icons-material/ContactMail';
+import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import Navbar from './Navbar';
 import Mappings from './Mappings';
 import Mapping from './Mapping';
 import NewAlbum from './newAlbum';
-
+import Albums from './Albums';
+import Album from './Album';
+import Login from './Login';
+import LoginHandler from './LoginHandler';
+import Admin from './Admin';
 
 const MyRoutes = () => {
+
+    
 
     const menuItems = {
         home: {
@@ -22,12 +29,27 @@ const MyRoutes = () => {
           href: '/mappings',
           icon: <InfoIcon />,
         },
-        newAlbum: {
-          label: 'New Album',
-          href: '/newAlbum',
+
+        albums: {
+          label: 'Albums',
+          href: '/album',
           icon: <ContactMailIcon />,
         },
+        login: {
+          label: 'Login',
+          href: '/login',
+          icon: <AccountBoxIcon />,
+        }
+
+
       };
+
+      LoginHandler.onAuthChange((user) => {
+        if(user)
+        {
+          delete menuItems.login;
+        }
+    });
       
 
     return (
@@ -37,7 +59,11 @@ const MyRoutes = () => {
                 <Route path="/" element={<App/>} />
                 <Route path="/mappings" element={<Mappings/>} />
                 <Route path="/mappings/:slug" element={<Mapping/>} />
-                <Route path="/newAlbum" element={<NewAlbum/>} />
+                <Route path="/album/new" element={<NewAlbum/>} />
+                <Route path="/album" element={<Albums/>} />
+                <Route path="/album/:album_id" element={<Album/>} />
+                <Route path="/login" element={<Login/>} />
+                <Route path="/admin" element={<Admin/>} />
             </Routes>
         </BrowserRouter>
     );

@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 import os
 from db_var import db
 from Database.DbObject import DbObject
+from firebase import Firebase
+from decorators import Decor
 
 from Endpoints import Endpoints
 load_dotenv()
@@ -13,10 +15,14 @@ app = Flask(__name__)
 
 # Enable CORS for all routes
 CORS(app)
+
 IMAGES_DIR = f'{os.path.dirname(__file__)}/{"images"}'
 SHEETS_DATA_COL = 'sheets_data'
 ALBUM = 'images_album'
 IMAGES = 'images'
+ADMIN = 'admin'
+
+
 
 key = os.environ['SHEETS_API_KEY']
 
@@ -24,6 +30,8 @@ db.set_db(os.environ.get('DB_NAME', 'CyberX'))
 db.set_collection(SHEETS_DATA_COL)
 
 
+firebase = Firebase(db, ADMIN)
+decor = Decor(firebase)
 
 spreadsheetId = os.environ['SPREADSHEET_ID']
 resSpreadsheetId = os.environ['RESOURCES_SPREADSHEET_ID']
@@ -180,10 +188,33 @@ def parse_spreadsheet_data(data, entity_name):
 
 
 @app.route('/test')
+@decor.login_required
 def test():
-    s = Spreadsheet(os.environ['SPREADSHEET_ID'])
-    headers = s.fetch_headers()
-    return jsonify({"message": headers})
+    return "Hello World"
+
+
+
+    # image_path = "images/1.jpg"
+    # db.set_collection(IMAGES)
+    # data = imgur.upload_image_endpoint(image_path,"Test Image", "This is a test image","lW08KxwEyhhBl3l").fetch()[0]['data']
+    # _id = data['id']
+    # deletehash = data['deletehash']
+    # obj = DbObject(Endpoints.Imgur.image_schema, False)
+    # obj._id = _id
+    # obj.deletehash = deletehash
+    # obj.data = data
+
+    # db.insert(obj)
+    # return jsonify(data)
+
+
+
+
+@app.route('/test2')
+def test2():
+    db.set_collection(IMAGES)
+    images = db.get_objects({})
+    return jsonify([image.compile() for image in images])
 
 @app.route("/")
 def hello_world():
@@ -206,7 +237,7 @@ def magazine_data(slug):
 
     return jsonify({
         "error": error if error else "Article not found",
-    })
+    }), 500
 
 @app.route(Endpoints.Local.get_random_image)
 def random_image():
@@ -235,7 +266,7 @@ def resources():
     return jsonify({
         "error": error if error else "No resources found",
         "resources": []
-    })
+    }), 500
 
 
 @app.route(Endpoints.Local.data)
@@ -263,7 +294,7 @@ def get_data(id):
     except Exception as e:
         return jsonify({
             "error": str(e)
-        })
+        }),500
 
 
 @app.route(Endpoints.Local.Spreadsheet.create,methods=['POST'])
@@ -300,7 +331,7 @@ def create_new_spreadsheet_data(id):
     except Exception as e:
         return jsonify({
             "error": str(e)
-        })
+        }), 500
 
 @app.route(Endpoints.Local.get_mappings)
 def get_mappings():
@@ -313,9 +344,10 @@ def get_mappings():
     except Exception as e:
         return jsonify({
             "error": str(e)
-        })
+        }), 500
 
 @app.route(Endpoints.Local.get_mapping_for_id)
+@decor.login_required
 def get_mapping_for_id(id):
     try:
         db.set_collection(SHEETS_DATA_COL)
@@ -324,7 +356,7 @@ def get_mapping_for_id(id):
     except Exception as e:
         return jsonify({
             "error": str(e)
-        })
+        }), 500
 
 
 @app.route(Endpoints.Local.new_album, methods=['POST'])
@@ -343,7 +375,7 @@ def new_album():
         obj.title = title
         obj.description = description
         obj.album_id = response['id']
-        obj.deletehsh = response['deletehash']
+        obj.deletehash = response['deletehash']
 
         db.set_collection(ALBUM)
         db.insert(obj)
@@ -353,7 +385,173 @@ def new_album():
     except Exception as e:
         return jsonify({
             "error": str(e)
-        })
+        }), 500
+
+@app.route(Endpoints.Local.get_albums)
+def get_albums():
+    db.set_collection(ALBUM)
+    albums = db.get_objects({})
+    return jsonify([album.compile() for album in albums])
+
+
+@app.route(Endpoints.Local.get_images_in_album)
+@decor.login_required
+def get_images_in_album(album_id):
+    import json
+    try:
+
+
+        data = imgur.get_images_in_album_endpoint(album_id).fetch()[0]['data']
+
+        #title = data['title']
+        #print(f"Getting images for album {title}")
+
+        print(json.dumps(data, indent=4))
+        print("-+-"*40,"\n")
+
+
+
+
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 400
+
+@app.route(Endpoints.Local.delete_image,methods=['DELETE'])
+def delete_image(image_id):
+    try:
+        # find the deletehash for the image
+        db.set_collection(IMAGES)
+        image = db.get_object({"_id": image_id})
+        deletehash = image.deletehash
+
+        if not deletehash:
+            return jsonify({
+                "error": "Image not found"
+            }), 400
+        else:
+            print(f"Deleting image {image_id}")
+
+        data = imgur.delete_image_endpoint(deletehash).fetch()[0]['data']
+
+        # remove the image from the database
+        db.delete({"_id": image_id})
+
+        print(data)
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 400
+
+@app.route(Endpoints.Local.upload_image, methods=['POST'])
+def upload_image_to_album(album_id):
+    import json
+    # Get the list of file objects from the request
+    images = request.files.getlist("files")
+
+    print(len(images))
+    
+    try:
+        for index ,image in enumerate(images):
+            image_content = image.read()
+            
+            print(f"Now uploading image {image.filename}")
+
+            # try getting title, description from image 
+            try:
+                title = request.form.get(f"title_{index}")
+                description = request.form.get(f"description_{index}")
+            except Exception as e:
+                title = None
+                description = None
+
+            print(f"Title: {title}, Description: {description}")
+
+
+
+            # get delete hash for the id 
+            db.set_collection(ALBUM)
+            album = db.get_object({"album_id": album_id}).compile()
+            if not album:
+                return jsonify({
+                    "error": "Album not found"
+                }), 400
+            
+            album_hash = album['deletehash']
+
+
+            data = imgur.upload_image_endpoint(image_content=image_content, title=title, description=description).fetch()[0]['data']
+
+            # move the image to the album
+            move = imgur.move_image_to_album_endpoint(data['deletehash'], album_hash).fetch()[0]
+
+
+            
+            print("-+-"*40,"\n",json.dumps(data, indent=4),"\n","-+-"*40,"\n",json.dumps(move, indent=4),"\n","-+-"*40,"\n")        
+
+            db.set_collection(IMAGES)
+            obj = DbObject(Endpoints.Imgur.image_schema, False)
+            obj._id = data['id']
+            obj.deletehash = data['deletehash']
+            obj.data = data
+        
+            db.insert(obj)
+
+        return jsonify({
+            "message": "Images uploaded"})
+    
+    except Exception as e:
+        print(f"Error uploading image: {e}")
+        return jsonify({
+            "error": str(e)
+        }), 400  
+
+
+@app.route(Endpoints.Local.admin)
+@decor.login_required
+def get_admin():
+    db.set_collection(ADMIN)
+    data = db.get_objects({})
+    return jsonify([d.compile()['email'] for d in data])
+
+@app.route(Endpoints.Local.admin, methods=['POST'])
+@decor.login_required
+def add_admin():
+    data = request.json
+
+    if not data or not data.get('emails'):
+        return jsonify({
+            "error": "Invalid data"
+        }), 400
+
+    db.set_collection(ADMIN)
+    for email in data['emails']:
+        obj = DbObject(Endpoints.Users.admin_user_schema, True)
+        obj.email = email.strip()
+        db.insert(obj)
+
+    return jsonify({
+        "message": "Admins added"
+    })
+
+@app.route(Endpoints.Local.admin, methods=['DELETE'])
+@decor.login_required
+def remove_1_admin():
+    email = request.json.get('email')
+
+    if not email:
+        return jsonify({
+            "error": "Invalid data"
+        }), 400
+
+    db.set_collection(ADMIN)
+    db.delete({"email": email.strip()})
+
+    return jsonify({
+        "message": "Admin removed"
+    })
 
 if __name__=="__main__":
     app.run(debug=True)
