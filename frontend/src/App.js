@@ -1,12 +1,12 @@
-import logo from './logo.svg';
 import './App.css';
-import { Paper, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 
 function App() {
   return (
-    <Paper>
-      <Typography variant="h1">Hello World</Typography>
-    </Paper>
+    <Box>
+      <Typography variant="h1">Hello Heckers</Typography>
+
+    </Box>
   );
 }
 

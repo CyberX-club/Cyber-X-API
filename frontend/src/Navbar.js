@@ -4,6 +4,7 @@ import { AppBar, Toolbar, Button, IconButton, Typography, Stack } from '@mui/mat
 import { useTheme } from '@mui/material/styles';
 import { Link } from 'react-router-dom'; // Assuming you're using react-router for routing
 import PropTypes from 'prop-types';
+import Endpoints from './Endpoints';
 
 const Navbar = ({ menuItems }) => {
   const theme = useTheme();
@@ -12,7 +13,7 @@ const Navbar = ({ menuItems }) => {
     <AppBar position="sticky" sx={{ mb: 2 }}>
       <Toolbar>
         <Typography variant="h6" sx={{ flexGrow: 1 }}>
-          MyApp
+          {Endpoints.APP_NAME || 'CyberX'}
         </Typography>
         <Stack direction="row" spacing={2}>
           {Object.keys(menuItems).map((key) => {

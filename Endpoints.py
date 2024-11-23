@@ -22,9 +22,15 @@ class Endpoints:
         get_albums = '/api/album'
         get_images_in_album = '/api/album/<album_id>'
         delete_image = '/api/image/<image_id>/delete'
+        delete_album = '/api/album/<album_id>/delete'
         upload_image = '/api/image/<album_id>/upload'
 
         admin = '/api/admin'
+
+        @staticmethod
+        def build_new_url(type="image",name=""):
+            return f"/storage/{type}/{name}"
+
         
         class Spreadsheet:
             create = '/api/spreadsheet/new/<id>'
@@ -63,7 +69,9 @@ class Endpoints:
         image_schema = Schema({
             "_id": {"type": str},
             "deletehash": {"type": str},
-            "data": {"type": dict}
+            "data": {"type": dict},
+            "api_name": {"type": str, "required": False},
+            "api_link": {"type": str, "required": False},
         })
 
         def __init__(self,api_key):
@@ -135,6 +143,13 @@ class Endpoints:
         def delete_image_endpoint(self,image_hash):
             return Endpoint(
                 url=f"{self.imgur_base_url}/image/{image_hash}",
+                method="DELETE",
+                headers=self.headers
+            )
+
+        def delete_album_endpoint(self,album_hash):
+            return Endpoint(
+                url=f"{self.imgur_base_url}/album/{album_hash}",
                 method="DELETE",
                 headers=self.headers
             )

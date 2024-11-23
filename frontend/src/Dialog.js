@@ -9,6 +9,8 @@ Button,
 Typography
 } from '@mui/material';
 
+
+const defaultProps = { open: false, x: 0, y: 0 };
 const InfoDialog = ({ open, handleClose, title, content }) => {
 return (
     <Dialog
@@ -34,6 +36,7 @@ return (
 );
 };
 
+export { defaultProps as defaultInfoDialogProps };
 export default InfoDialog;
 
 // Usage example:

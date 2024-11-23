@@ -94,7 +94,20 @@ def create_entity_class(class_name, header_mapping):
     print(f"Class {class_name} created.")
     return entity_class
 
-        
+
+def generate_safe_name(input_str, add_random=False):
+    # Replace any non-alphanumeric character with a dash and convert to lowercase
+    safe_str = ''.join(c if c.isalnum() else '-' for c in input_str.lower())
+    # Remove consecutive dashes and strip dashes from ends
+    safe_str = '-'.join(filter(None, safe_str.split('-')))
+    safe_str = safe_str.strip('-')
+    # Optionally append random string
+    if add_random:
+        import random
+        import string
+        random_str = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        safe_str = f"{safe_str}-{random_str}"
+    return safe_str
 
 
 # base entity simply defines the class so that we have a definite structure 
@@ -281,9 +294,18 @@ def get_data(id):
                 "error": "Data not found"
             })
         else:
+            
+            data  = Endpoint(Endpoints.spreadsheet_base_url(id, key, "A1:100"), "GET").fetch()[0]['values']
+
+            # check if data.mappings is empty or is non iterable or eve that mappings exist 
+            if not hasattr(data, 'mappings') or not data.mappings or not isinstance(data.mappings, list):
+                return jsonify(data)
+                
+
             mappings = {mapping['sheets_header']:mapping['python_header'] for mapping in data.mappings}
             header_mappings[id] = mappings
-            data  = Endpoint(Endpoints.spreadsheet_base_url(id, key, "A1:100"), "GET").fetch()[0]['values']
+            
+            
             # return data
             #return header_mappings[id]
             return parse_spreadsheet_data(data, id)
@@ -329,6 +351,7 @@ def create_new_spreadsheet_data(id):
         })
         
     except Exception as e:
+        print(f"Error: {e}")
         return jsonify({
             "error": str(e)
         }), 500
@@ -388,6 +411,7 @@ def new_album():
         }), 500
 
 @app.route(Endpoints.Local.get_albums)
+@decor.login_required
 def get_albums():
     db.set_collection(ALBUM)
     albums = db.get_objects({})
@@ -446,6 +470,7 @@ def delete_image(image_id):
         }), 400
 
 @app.route(Endpoints.Local.upload_image, methods=['POST'])
+@decor.login_required
 def upload_image_to_album(album_id):
     import json
     # Get the list of file objects from the request
@@ -496,7 +521,16 @@ def upload_image_to_album(album_id):
             obj._id = data['id']
             obj.deletehash = data['deletehash']
             obj.data = data
-        
+
+            api_name = generate_safe_name(data['title'], True)
+            obj.api_name = api_name
+            obj.api_link = Endpoints.Local.build_new_url(
+                type="image",
+                name=api_name
+            )
+            obj.data['api_name'] = obj.api_name
+            obj.data['api_link'] = obj.api_link
+
             db.insert(obj)
 
         return jsonify({
@@ -552,6 +586,34 @@ def remove_1_admin():
     return jsonify({
         "message": "Admin removed"
     })
+
+@app.route(Endpoints.Local.delete_album, methods=['DELETE'])
+@decor.login_required
+def delete_album(album_id):
+    try:
+        db.set_collection(ALBUM)
+        album = db.get_object({"_id": album_id}).compile()
+
+        if not album:
+            album = db.get_object({"album_id": album_id}).compile()
+        
+        if not album:
+            return jsonify({
+                "error": "Album not found"
+            }), 400
+
+        deletehash = album['deletehash']
+        data = imgur.delete_album_endpoint(deletehash).fetch()[0]
+
+        # remove the album from the database
+        db.delete({"deletehash": deletehash})
+
+        return jsonify(data)
+        
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 400
 
 if __name__=="__main__":
     app.run(debug=True)

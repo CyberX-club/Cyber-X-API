@@ -22,7 +22,10 @@ const Mapping = () => {
   const [selectedRows, setSelectedRows] = useState([]);
   const [token, setToken] = useState('');
   const [infoDialogData, setInfoDialogData] = useState({ open: false, title: '', content: '' });
-  LoginHandler.setInfoOrToken(setInfoDialogData, setToken);
+  
+  useEffect(() => {
+    LoginHandler.setInfoOrToken(setInfoDialogData, setToken);
+  }, []);
 
 
   const changeHandler = (e, type) => {
@@ -43,7 +46,9 @@ const Mapping = () => {
 
         fetch(Endpoints.CREATE_SPREADSHEET(slug), {
           method: 'POST',
-          headers: {'Authorization': `${token}`},
+          headers: {...Endpoints.BUILD_HEADERS(token),
+            'Content-Type': 'application/json'
+          },
           body: JSON.stringify(data)
         })
         .then((response) => response.json())

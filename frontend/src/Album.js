@@ -14,9 +14,11 @@ import Endpoints from './Endpoints';
 import ContextMenu from './CustomContextMenu';
 import LoginHandler from './LoginHandler';
 import InfoDialog from './Dialog';
+import {defaultInfoDialogProps} from './Dialog';
+import { handleContextMenu } from './CustomContextMenu';
 
 const DropZone = styled(Paper)(({ theme, isDragActive }) => ({
-  padding: theme.spacing(6),
+  padding: theme.spacing(2),
   textAlign: 'center',
   border: `2px dashed ${isDragActive ? theme.palette.primary.main : theme.palette.divider}`,
   backgroundColor: isDragActive ? 'rgba(0, 0, 0, 0.04)' : 'transparent',
@@ -177,11 +179,13 @@ const UploadDialog = ({ open, onClose, onUpload, isUploading }) => {
 
 const Album = ({ album_id_safe }) => {
   const [albumData, setAlbumData] = useState([]);
+
   const [contextMenu, setContextMenu] = useState({ open: false, x: 0, y: 0 });
   const [contextMenuData, setContextMenuData] = useState([]);
+
   const [currentImage, setCurrentImage] = useState(null);
   const [token, setToken] = useState('');
-  const [infoDialog, setInfoDialog] = useState({ open: false, title: '', content: '' });
+  const [infoDialog, setInfoDialog] = useState(defaultInfoDialogProps);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
@@ -192,7 +196,7 @@ const Album = ({ album_id_safe }) => {
     try {
       const response = await fetch(Endpoints.UPLOAD_IMAGE(album_id || album_id_safe), {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: Endpoints.BUILD_HEADERS(token),
         body: formData
       });
 
@@ -239,39 +243,38 @@ const Album = ({ album_id_safe }) => {
     fetchAlbumData();
   }, [fetchAlbumData]);
 
-  const handleContextMenu = (event, image) => {
-    event.preventDefault();
-    setCurrentImage(image);
-    setContextMenu({ 
-      open: true, 
-      x: event.clientX, 
-      y: event.clientY 
-    });
-    setContextMenuData([
-      {
-        title: 'Open in new tab',
-        onClick: () => window.open(image.link, '_blank')
-      },
-      {
-        title: 'Copy link',
-        onClick: () => navigator.clipboard.writeText(image.link)
-      },
-      {
-        title: 'Delete',
-        onClick: async () => {
-          try {
-            await fetch(Endpoints.DEL_IMAGE(image.id), {
-              method: 'DELETE',
-              headers: { 'Authorization': token }
-            });
-            fetchAlbumData();
-          } catch (error) {
-            console.error('Delete failed:', error);
+  const localHandleContextMenu = (event, image) => {
+    handleContextMenu(
+      event,
+      setContextMenu,
+      setContextMenuData,
+      [
+        {
+          title: 'Open in new tab',
+          onClick: () => window.open(image.link, '_blank')
+        },
+        {
+          title: 'Copy link',
+          onClick: () => navigator.clipboard.writeText(image.link)
+        },
+        {
+          title: 'Delete',
+          onClick: async () => {
+            try {
+              await fetch(Endpoints.DEL_IMAGE(image.id), {
+                method: 'DELETE',
+                headers: { 'Authorization': token }
+              });
+              fetchAlbumData();
+            } catch (error) {
+              console.error('Delete failed:', error);
+            }
           }
         }
-      }
-    ]);
+      ],
+      () => setCurrentImage(image));
   };
+
 
   return (
     <Box p={4}>
@@ -293,7 +296,7 @@ const Album = ({ album_id_safe }) => {
         onClick={() => setUploadDialogOpen(true)}
         sx={{ mb: 3 }}
       >
-        <CloudUploadIcon sx={{ fontSize: 48, mb: 2, color: 'primary.main' }} />
+        {/* <CloudUploadIcon sx={{ fontSize: 48, mb: 2, color: 'primary.main' }} /> */}
         <Typography variant="h6">
           Click to upload images
         </Typography>
@@ -309,7 +312,7 @@ const Album = ({ album_id_safe }) => {
             albumData.map((image) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={image.id}>
                 <Card 
-                  onContextMenu={(e) => handleContextMenu(e, image)}
+                  onContextMenu={(e) => localHandleContextMenu(e, image)}
                   sx={{
                     height: '100%',
                     display: 'flex',

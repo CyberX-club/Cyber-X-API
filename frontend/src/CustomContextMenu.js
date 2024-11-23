@@ -1,5 +1,24 @@
 import { Menu, MenuItem } from "@mui/material";
 
+
+const handleContextMenu = (event,setContextMenu,setContextMenuData,data,additionalFunction) => {
+    event.preventDefault();
+
+    if (additionalFunction) {
+        additionalFunction(event);
+    }
+    
+    setContextMenu({ 
+      open: true, 
+      x: event.clientX, 
+      y: event.clientY 
+    });
+    setContextMenuData(data);
+  };
+
+const defaultProps = { open: false, x: 0, y: 0 };
+const dfeaultOnClose = (setContextMenu) => {setContextMenu(defaultProps);};
+
 const ContextMenu = ({ open, x, y, onClose, data }) => {
     return (
         <Menu
@@ -18,5 +37,5 @@ const ContextMenu = ({ open, x, y, onClose, data }) => {
         </Menu>
     );
 };
-
+export { handleContextMenu,defaultProps as defaultContextMenuProps,dfeaultOnClose };
 export default ContextMenu;
