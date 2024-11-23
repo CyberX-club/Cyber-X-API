@@ -614,6 +614,13 @@ def delete_album(album_id):
         return jsonify({
             "error": str(e)
         }), 400
+    
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def catch_all(path):
+    #return 'You want path: %s' % path
+
+    return render_template("index.html")
 
 if __name__=="__main__":
     app.run(debug=True)
