@@ -2,10 +2,27 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import auth
 from Database.DB import DB
+from dotenv import load_dotenv
+import os
+import json
+
+load_dotenv()
 
 class Firebase:
     def __init__(self,db:DB,admin_col="admin"):
-        cred = credentials.Certificate("cyberxapi-firebase-adminsdk-5u2p3-2e67a225a7.json")
+
+        # Initialize
+        FIREBASE_ADMIN_SDK = os.getenv("FIREBASE_ADMIN_SDK")
+
+        cred = None
+
+        with open(FIREBASE_ADMIN_SDK) as json_file:
+            data = json.load(json_file)
+            cred = credentials.Certificate(data)
+        
+        if not cred:
+            raise Exception("Error in loading Firebase Admin SDK")
+
         # check if firebase is already initialized
         if not firebase_admin._apps:
             firebase_admin.initialize_app(cred)
