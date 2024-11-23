@@ -1,7 +1,9 @@
 class Endpoints{
 
     static APP_NAME = "CyberX-Admin";
-    static BASE_URL = "https://humble-telegram-44vvrr5qggwc7vp6-5000.app.github.dev/api";
+    static BASE_URL = process.env.NODE_ENV === 'production' 
+        ? `${window.location.origin}/api`
+        : "https://humble-telegram-44vvrr5qggwc7vp6-5000.app.github.dev/api";
 
     static BUILD_HEADERS = (token) => ({
         'Authorization': `${token}`,
