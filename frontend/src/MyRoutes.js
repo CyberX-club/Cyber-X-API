@@ -13,43 +13,60 @@ import Album from './Album';
 import Login from './Login';
 import LoginHandler from './LoginHandler';
 import Admin from './Admin';
+import { useState,useEffect } from 'react';
 
 const MyRoutes = () => {
 
     
 
-    const menuItems = {
-        home: {
-          label: 'Home',
-          href: '/',
-          icon: <HomeIcon />,
-        },
-        about: {
-          label: 'Mapping',
-          href: '/mappings',
-          icon: <InfoIcon />,
-        },
+    const [menuItems, setMenuItems] = useState({
+      home: {
+        label: 'Home',
+        href: '/',
+        icon: <HomeIcon />,
+      },
+      about: {
+        label: 'Mapping',
+        href: '/mappings',
+        icon: <InfoIcon />,
+      },
 
-        albums: {
-          label: 'Albums',
-          href: '/album',
-          icon: <ContactMailIcon />,
-        },
-        login: {
-          label: 'Login',
-          href: '/login',
-          icon: <AccountBoxIcon />,
-        }
+      albums: {
+        label: 'Albums',
+        href: '/album',
+        icon: <ContactMailIcon />,
+      },
+      login: {
+        label: 'Login',
+        href: '/login',
+        icon: <AccountBoxIcon />,
+      }
 
 
-      };
-
-      LoginHandler.onAuthChange((user) => {
-        if(user)
-        {
-          delete menuItems.login;
-        }
     });
+
+    //   LoginHandler.onAuthChange((user) => {
+    //     var newMenuItems = {...menuItems};
+    //     // delete login menu item if user is logged in
+    //     if (user) {
+    //       delete newMenuItems.login;
+    //       newMenuItems.admin = {
+    //         label: 'Admin',
+    //         href: '/admin',
+    //         icon: <AccountBoxIcon />,
+    //       };
+    //     } else {
+    //       newMenuItems.login = {
+    //         label: 'Login',
+    //         href: '/login',
+    //         icon: <AccountBoxIcon />,
+    //       };
+    //       delete newMenuItems.admin;
+    //     }
+
+    //     setMenuItems(newMenuItems);
+
+    // });
       
 
     return (

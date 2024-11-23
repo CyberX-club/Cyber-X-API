@@ -13,12 +13,28 @@ class Firebase:
 
         # Initialize
         FIREBASE_ADMIN_SDK = os.getenv("FIREBASE_ADMIN_SDK")
+        JSON_FILE = os.getenv("JSON_FILE","firebase_admin_sdk.json")
 
         cred = None
 
-        with open(FIREBASE_ADMIN_SDK) as json_file:
-            data = json.load(json_file)
-            cred = credentials.Certificate(data)
+        # Create a file called firebase_admin_sdk.json and add the firebase admin sdk json
+        if not FIREBASE_ADMIN_SDK:
+            raise Exception("Error in loading Firebase Admin SDK")
+        
+        with open(JSON_FILE,'w') as json_file:
+            print(FIREBASE_ADMIN_SDK)
+            # data = json.loads(FIREBASE_ADMIN_SDK)
+            
+            json_file.write(FIREBASE_ADMIN_SDK)
+
+
+
+        
+        try:
+            cred = credentials.Certificate(JSON_FILE)
+
+        except Exception as e:
+            raise Exception("Error in loading Firebase Admin SDK")
         
         if not cred:
             raise Exception("Error in loading Firebase Admin SDK")
