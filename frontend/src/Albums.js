@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, Typography, Grid, Container, CircularProgress, Box } from '@mui/material';
-import Endpoints from './Endpoints';
+import Endpoints, { Auth } from './Endpoints';
 import LoginHandler from './LoginHandler';
 import { handleContextMenu,defaultContextMenuProps,dfeaultOnClose } from './CustomContextMenu';
 import ContextMenu from './CustomContextMenu';
@@ -12,16 +12,18 @@ const Albums = () => {
     const [albums, setAlbums] = useState([]);
     const [contextMenu, setContextMenu] = useState(defaultContextMenuProps);
     const [contextMenuData, setContextMenuData] = useState(null);
-    const [infoDialog, setInfoDialog] = useState(defaultInfoDialogProps);
+    const {
+        token,
+        infoDialog,
+        setInfoDialog,
+        setToken
+    } = Auth();
     const [loading, setLoading] = useState(true);
-    const [token, setToken] = useState(null);
+    
 
 
     const unsetLoading = () => setLoading(false);
 
-    useEffect(() => {
-        LoginHandler.setInfoOrToken(setInfoDialog, setToken);
-      }, []);
 
     const localHandleContextMenu = () => {};
     const handleAlbumDelete = (id) => {

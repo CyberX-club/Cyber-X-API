@@ -295,16 +295,25 @@ def get_data(id):
             })
         else:
             
-            data  = Endpoint(Endpoints.spreadsheet_base_url(id, key, "A1:100"), "GET").fetch()[0]['values']
+            
 
-            # check if data.mappings is empty or is non iterable or eve that mappings exist 
-            if not hasattr(data, 'mappings') or not data.mappings or not isinstance(data.mappings, list):
-                return jsonify(data)
+            # # check if data.mappings is empty or is non iterable or eve that mappings exist 
+            # if not hasattr(data, 'mappings') or not data.mappings or not isinstance(data.mappings, list):
+            #     return jsonify(data)
                 
 
-            mappings = {mapping['sheets_header']:mapping['python_header'] for mapping in data.mappings}
+            try:
+                mappings = {mapping['sheets_header']:mapping['python_header'] for mapping in data.mappings}
+            except Exception as e:
+                print(f"Error at forming mappings: {e}")
+                mappings = {}
+
+            
+
             header_mappings[id] = mappings
             
+            data  = Endpoint(Endpoints.spreadsheet_base_url(id, key, "A1:100"), "GET").fetch()[0]['values']
+
             
             # return data
             #return header_mappings[id]
@@ -312,7 +321,7 @@ def get_data(id):
 
 
 
-        return jsonify(data.compile())
+        
     except Exception as e:
         return jsonify({
             "error": str(e)
@@ -364,6 +373,19 @@ def get_mappings():
         return jsonify(
             [mapping.compile() for mapping in mappings]
         )
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+@app.route(Endpoints.Local.delete_mapping, methods=['DELETE'])
+def delete_mapping(id):
+    try:
+        db.set_collection(SHEETS_DATA_COL)
+        db.delete({"_id": id})
+        return jsonify({
+            "message": "Mapping deleted"
+        })
     except Exception as e:
         return jsonify({
             "error": str(e)

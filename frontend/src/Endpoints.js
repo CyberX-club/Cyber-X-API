@@ -1,3 +1,8 @@
+import { useEffect,useState } from "react";
+import LoginHandler from "./LoginHandler";
+import { defaultInfoDialogProps } from "./Dialog";
+
+
 class Endpoints{
 
     static APP_NAME = "CyberX-Admin";
@@ -11,7 +16,8 @@ class Endpoints{
 
     static CREATE_SPREADSHEET = (id) => `${Endpoints.BASE_URL}/spreadsheet/new/${id}`;
     static MAPPINGS = `${Endpoints.BASE_URL}/mappings`;
-    static MAPPING = (id) => `${Endpoints.BASE_URL}/mappings/${id}`;    
+    static MAPPING = (id) => `${Endpoints.BASE_URL}/mappings/${id}`;  
+    static DEL_MAPPING = (id) => `${Endpoints.BASE_URL}/mappings/${id}/delete`;
     
     static NEW_ALBUM = `${Endpoints.BASE_URL}/album/new`;
     static ALBUMS = `${Endpoints.BASE_URL}/album`;
@@ -23,5 +29,25 @@ class Endpoints{
 
 
 }
+
+const Auth = () => {
+    const [token, setToken] = useState(null);
+    const [infoDialog, setInfoDialog] = useState(
+        {...defaultInfoDialogProps,
+            handleClose: () => setInfoDialog({...infoDialog, open: false})
+        });
+    useEffect(() => {
+        LoginHandler.setInfoOrToken(setInfoDialog, setToken);
+    },[]);
+
+    return {
+        token,
+        infoDialog,
+        setToken,
+        setInfoDialog
+    };
+};
+
+export { Auth };
 
 export default Endpoints;

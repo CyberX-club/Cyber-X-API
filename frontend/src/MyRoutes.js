@@ -13,8 +13,17 @@ import Album from './Album';
 import Login from './Login';
 import LoginHandler from './LoginHandler';
 import Admin from './Admin';
+import { Box,LinearProgress } from '@mui/material';
 import { useState,useEffect } from 'react';
+import { Auth } from './Endpoints';
 
+function LinearIndeterminate() {
+  return (
+    <Box sx={{ width: '100%' }}>
+      <LinearProgress />
+    </Box>
+  );
+}
 
 const MyRoutes = () => {
 
@@ -42,36 +51,31 @@ const MyRoutes = () => {
         href: '/login',
         icon: <AccountBoxIcon />,
       }
-
-
     });
 
-    //   LoginHandler.onAuthChange((user) => {
-    //     var newMenuItems = {...menuItems};
-    //     // delete login menu item if user is logged in
-    //     if (user) {
-    //       delete newMenuItems.login;
-    //       newMenuItems.admin = {
-    //         label: 'Admin',
-    //         href: '/admin',
-    //         icon: <AccountBoxIcon />,
-    //       };
-    //     } else {
-    //       newMenuItems.login = {
-    //         label: 'Login',
-    //         href: '/login',
-    //         icon: <AccountBoxIcon />,
-    //       };
-    //       delete newMenuItems.admin;
-    //     }
+    const { token, infoDialog } = Auth();
+    const [loading, setLoading] = useState(true);
 
-    //     setMenuItems(newMenuItems);
+    useEffect(() => {
+      // console.log("Token: ",token);
+      if(token){
+        var newMenuItems = {...menuItems};
+        delete newMenuItems.login;
+        console.log("Menu Items: ",newMenuItems);
+        setMenuItems(newMenuItems);
+      }
+      
+      setTimeout(() => setLoading(false), 1000);
 
-    // });
+      },[token]);
+      
+
+ 
       
 
     return (
         <BrowserRouter>
+        {loading && <LinearIndeterminate />}
         <Navbar menuItems={menuItems} />
             <Routes>
                 <Route path="/" element={<App/>} />

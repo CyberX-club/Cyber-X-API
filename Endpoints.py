@@ -16,6 +16,7 @@ class Endpoints:
         get_mappings = '/api/mappings'
         get_mapping_for_id = '/api/mappings/<id>'
         data = '/api/data/<id>'
+        delete_mapping = '/api/mappings/<id>/delete'
 
 
         new_album = '/api/album/new'
