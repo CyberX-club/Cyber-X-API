@@ -39,7 +39,6 @@ const Mappings = () => {
       })
         .then((response) => response.json())
         .then((data) => {
-          console.log(data);
           setMappings(data);
         });
     } else {
