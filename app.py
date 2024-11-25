@@ -637,6 +637,35 @@ def delete_album(album_id):
             "error": str(e)
         }), 400
     
+@app.route(Endpoints.Local.edit_image, methods=['POST'])
+@decor.login_required
+def edit_image(image_id):
+    try:
+        data = request.json
+        title = data.get('title')
+        description = data.get('description')
+
+        db.set_collection(IMAGES)
+        image = db.get_object({"_id": image_id}).compile()
+        if not image:
+            return jsonify({
+                "error": "Image not found"
+            }), 400
+
+        image_hash = image['deletehash']
+
+        data = imgur.edit_image_endpoint(image_hash, title, description).fetch()[0]
+
+        # update the image in the database
+        db.update({"_id": image_id}, {"$set": {"data.title": title, "data.description": description}})
+
+        return jsonify(data)
+    
+    except Exception as e:
+        return jsonify({
+            "error": str(e)
+        }), 400
+    
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def catch_all(path):

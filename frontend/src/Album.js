@@ -1,181 +1,93 @@
-import { 
-  Grid, Card, CardMedia, CardContent, Typography, Box, Paper,
-  Alert, CircularProgress, Dialog, DialogTitle, DialogContent,
-  DialogActions, Button, TextField, IconButton, List, ListItem,
-  ListItemText, ListItemSecondaryAction, styled
-} from '@mui/material';
-import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import { useDropzone } from 'react-dropzone';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DeleteIcon from '@mui/icons-material/Delete';
-import CloseIcon from '@mui/icons-material/Close';
-import Endpoints from './Endpoints';
-import ContextMenu from './CustomContextMenu';
-import LoginHandler from './LoginHandler';
-import InfoDialog from './Dialog';
-import {defaultInfoDialogProps} from './Dialog';
-import { handleContextMenu } from './CustomContextMenu';
+import {
+  Grid,
+  Card,
+  CardMedia,
+  CardContent,
+  Typography,
+  Box,
+  Paper,
+  Alert,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+} from "@mui/material";
+import { useState, useEffect, useCallback, memo } from "react";
+import { useParams } from "react-router-dom";
+import Endpoints from "./Endpoints";
+import ContextMenu from "./CustomContextMenu";
+import LoginHandler from "./LoginHandler";
+import InfoDialog from "./Dialog";
+import { defaultInfoDialogProps } from "./Dialog";
+import { handleContextMenu } from "./CustomContextMenu";
+import { UploadDialog, DropZone, UploadEditBox } from "./components/Upload";
+import { Save } from "@mui/icons-material";
 
-const DropZone = styled(Paper)(({ theme, isDragActive }) => ({
-  padding: theme.spacing(2),
-  textAlign: 'center',
-  border: `2px dashed ${isDragActive ? theme.palette.primary.main : theme.palette.divider}`,
-  backgroundColor: isDragActive ? 'rgba(0, 0, 0, 0.04)' : 'transparent',
-  cursor: 'pointer',
-  transition: 'all 0.2s ease-in-out',
-  '&:hover': {
-    backgroundColor: 'rgba(0, 0, 0, 0.04)'
-  }
-}));
-
-const UploadDialog = ({ open, onClose, onUpload, isUploading }) => {
-  const [uploadQueue, setUploadQueue] = useState([]);
-  
-  const onDrop = useCallback((acceptedFiles) => {
-    const newFiles = acceptedFiles.map(file => ({
-      file,
-      title: '',
-      description: '',
-      preview: URL.createObjectURL(file)
-    }));
-    setUploadQueue(prev => [...prev, ...newFiles]);
-  }, []);
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: { 'image/*': ['.jpeg', '.jpg', '.png', '.gif'] },
-    maxFiles: 10
+// Memoized EditBox component to prevent unnecessary re-renders
+const EditBox = memo(({ open, onClose, item, onSave }) => {
+  // Local state to manage form values with default empty values
+  const [editedItem, setEditedItem] = useState({
+    preview: "",
+    title: "",
+    description: "",
+    ...item, // Spread item properties if it exists
   });
 
-  const handleRemoveFile = (index) => {
-    setUploadQueue(prev => {
-      const newQueue = [...prev];
-      URL.revokeObjectURL(newQueue[index].preview);
-      newQueue.splice(index, 1);
-      return newQueue;
-    });
-  };
+  // Update local state when item prop changes
+  useEffect(() => {
+    if (item) {
+      setEditedItem({
+        preview: "",
+        title: "",
+        description: "",
+        ...item,
+      });
+    }
+  }, [item]);
 
+  // Handle field updates
   const handleUpdateMetadata = (index, field, value) => {
-    setUploadQueue(prev => {
-      const newQueue = [...prev];
-      newQueue[index] = { ...newQueue[index], [field]: value };
-      return newQueue;
-    });
+    setEditedItem((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
-  const handleUpload = async () => {
-    const formData = new FormData();
-    uploadQueue.forEach((item, index) => {
-      formData.append('files', item.file);
-      formData.append(`title_${index}`, item.title || null);
-      formData.append(`description_${index}`, item.description || null);
-    });
-    
-    await onUpload(formData);
-    setUploadQueue([]);
+  // Handle dialog close
+  const handleClose = () => {
+    // if (editedItem) {
+    //   onSave(editedItem);
+    // }
     onClose();
   };
 
-  // Cleanup previews when dialog closes
-  useEffect(() => {
-    if (!open) {
-      uploadQueue.forEach(item => URL.revokeObjectURL(item.preview));
-      setUploadQueue([]);
-    }
-  }, [open]);
+  // Don't render the dialog if there's no item
+  if (!open) {
+    return null;
+  }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          Upload Images
-          <IconButton size="small" onClick={onClose}>
-            <CloseIcon />
-          </IconButton>
+        <Box>
+          <Typography variant="h6">Edit Image Details</Typography>
         </Box>
       </DialogTitle>
       <DialogContent>
-        <DropZone {...getRootProps()} isDragActive={isDragActive}>
-          <input {...getInputProps()} />
-          <CloudUploadIcon sx={{ fontSize: 48, mb: 2, color: 'primary.main' }} />
-          <Typography variant="h6">
-            {isDragActive ? "Drop images here" : "Drag & drop images, or click to select"}
-          </Typography>
-        </DropZone>
-
-        <List sx={{ mt: 2 }}>
-          {uploadQueue.map((item, index) => (
-            <ListItem 
-              key={index}
-              sx={{ 
-                border: 1, 
-                borderColor: 'divider',
-                borderRadius: 1,
-                mb: 1,
-                p: 2 
-              }}
-            >
-              <Box display="flex" gap={2} width="100%">
-                <img 
-                  src={item.preview}
-                  alt="Preview"
-                  style={{
-                    width: 100,
-                    height: 100,
-                    objectFit: 'cover',
-                    borderRadius: 4
-                  }}
-                />
-                <Box flex={1}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Title"
-                    value={item.title}
-                    onChange={(e) => handleUpdateMetadata(index, 'title', e.target.value)}
-                    sx={{ mb: 2 }}
-                  />
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Description"
-                    value={item.description}
-                    onChange={(e) => handleUpdateMetadata(index, 'description', e.target.value)}
-                    multiline
-                    rows={2}
-                  />
-                </Box>
-                <IconButton 
-                  onClick={() => handleRemoveFile(index)}
-                  sx={{ alignSelf: 'flex-start' }}
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Box>
-            </ListItem>
-          ))}
-        </List>
+        <UploadEditBox
+          item={editedItem}
+          index={0}
+          handleUpdateMetadata={handleUpdateMetadata}
+          handleRemoveFile={() => {
+            onSave(editedItem);
+          }}
+          icon={<Save />}
+          size={200}
+        />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
-        <Button 
-          onClick={handleUpload}
-          variant="contained"
-          disabled={uploadQueue.length === 0 || isUploading}
-        >
-          {isUploading ? (
-            <>
-              <CircularProgress size={24} sx={{ mr: 1 }} />
-              Uploading...
-            </>
-          ) : 'Upload'}
-        </Button>
-      </DialogActions>
     </Dialog>
   );
-};
+});
 
 const Album = ({ album_id_safe }) => {
   const [albumData, setAlbumData] = useState([]);
@@ -184,34 +96,41 @@ const Album = ({ album_id_safe }) => {
   const [contextMenuData, setContextMenuData] = useState([]);
 
   const [currentImage, setCurrentImage] = useState(null);
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState("");
   const [infoDialog, setInfoDialog] = useState(defaultInfoDialogProps);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+
   const { album_id } = useParams();
 
   const handleUpload = async (formData) => {
     setIsUploading(true);
     try {
-      const response = await fetch(Endpoints.UPLOAD_IMAGE(album_id || album_id_safe), {
-        method: 'POST',
-        headers: Endpoints.BUILD_HEADERS(token),
-        body: formData
-      });
+      const response = await fetch(
+        Endpoints.UPLOAD_IMAGE(album_id || album_id_safe),
+        {
+          method: "POST",
+          headers: Endpoints.BUILD_HEADERS(token),
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
-        throw new Error('Upload failed with status: ' + response.status);
+        throw new Error("Upload failed with status: " + response.status);
       }
 
       fetchAlbumData();
     } catch (error) {
-      console.error('Upload failed:', error);
+      console.error("Upload failed:", error);
       setInfoDialog({
         open: true,
-        title: 'Upload Failed',
-        content: 'Failed to upload images. Please try again.',
-        handleClose: () => setInfoDialog({ ...infoDialog, open: false })
+        title: "Upload Failed",
+        content: "Failed to upload images. Please try again.",
+        handleClose: () => setInfoDialog({ ...infoDialog, open: false }),
       });
     } finally {
       setIsUploading(false);
@@ -220,16 +139,19 @@ const Album = ({ album_id_safe }) => {
 
   const fetchAlbumData = useCallback(async () => {
     if (!token) return;
-    
+
     setIsLoading(true);
     try {
-      const response = await fetch(Endpoints.IMAGES_IN_ALBUM(album_id || album_id_safe), {
-        headers: { 'Authorization': token }
-      });
+      const response = await fetch(
+        Endpoints.IMAGES_IN_ALBUM(album_id || album_id_safe),
+        {
+          headers: { Authorization: token },
+        }
+      );
       const data = await response.json();
       setAlbumData(data);
     } catch (error) {
-      console.error('Failed to fetch album:', error);
+      console.error("Failed to fetch album:", error);
     } finally {
       setIsLoading(false);
     }
@@ -250,35 +172,98 @@ const Album = ({ album_id_safe }) => {
       setContextMenuData,
       [
         {
-          title: 'Open in new tab',
-          onClick: () => window.open(image.link, '_blank')
+          title: "Open in new tab",
+          onClick: () => window.open(image.link, "_blank"),
         },
         {
-          title: 'Copy link',
-          onClick: () => navigator.clipboard.writeText(image.link)
+          title: "Copy link",
+          onClick: () => navigator.clipboard.writeText(image.link),
         },
         {
-          title: 'Delete',
+          title: "Delete",
           onClick: async () => {
             try {
               await fetch(Endpoints.DEL_IMAGE(image.id), {
-                method: 'DELETE',
-                headers: { 'Authorization': token }
+                method: "DELETE",
+                headers: { Authorization: token },
               });
               fetchAlbumData();
             } catch (error) {
-              console.error('Delete failed:', error);
+              console.error("Delete failed:", error);
             }
-          }
-        }
+          },
+        },
       ],
-      () => setCurrentImage(image));
+      () => setCurrentImage(image)
+    );
   };
 
+  const handleSaveEdit = async (editedItem) => {
+    try {
+      // Here you would typically make an API call to save the changes
+      // For now, we'll just update the local state
+      
+
+
+      fetch(Endpoints.EDIT_IMAGE(editedItem.id), {
+        method: "POST",
+        headers: {
+          ...Endpoints.BUILD_HEADERS(token),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: editedItem.title,
+          description: editedItem.description,
+      })})
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data);
+        });
+
+
+
+      var newItems = albumData.map((item) =>
+        item.link === editedItem.preview
+          ? {
+              ...item,
+              title: editedItem.title,
+              description: editedItem.description,
+            }
+          : item
+      );
+
+      
+
+      setAlbumData((prev) => newItems);
+    } catch (error) {
+      console.error("Failed to save changes:", error);
+    }
+  };
+
+  const handleClickOpen = (item) => {
+    if (item) {
+      setSelectedItem(item);
+      setEditDialogOpen(true);
+    }
+  };
+
+  const handleEditClose = () => {
+    setEditDialogOpen(false);
+    setSelectedItem(null);
+  };
 
   return (
     <Box p={4}>
-      <InfoDialog {...infoDialog} onClose={() => setInfoDialog({ ...infoDialog, open: false })} />
+      <EditBox
+        open={editDialogOpen}
+        onClose={handleEditClose}
+        item={selectedItem}
+        onSave={handleSaveEdit}
+      />
+      <InfoDialog
+        {...infoDialog}
+        onClose={() => setInfoDialog({ ...infoDialog, open: false })}
+      />
       <ContextMenu
         {...contextMenu}
         onClose={() => setContextMenu({ open: false, x: 0, y: 0 })}
@@ -292,14 +277,9 @@ const Album = ({ album_id_safe }) => {
         isUploading={isUploading}
       />
 
-      <DropZone 
-        onClick={() => setUploadDialogOpen(true)}
-        sx={{ mb: 3 }}
-      >
+      <DropZone onClick={() => setUploadDialogOpen(true)} sx={{ mb: 3 }}>
         {/* <CloudUploadIcon sx={{ fontSize: 48, mb: 2, color: 'primary.main' }} /> */}
-        <Typography variant="h6">
-          Click to upload images
-        </Typography>
+        <Typography variant="h6">Click to upload images</Typography>
       </DropZone>
 
       {isLoading ? (
@@ -311,17 +291,18 @@ const Album = ({ album_id_safe }) => {
           {albumData.length > 0 ? (
             albumData.map((image) => (
               <Grid item xs={12} sm={6} md={4} lg={3} key={image.id}>
-                <Card 
+                <Card
                   onContextMenu={(e) => localHandleContextMenu(e, image)}
                   sx={{
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: (theme) => theme.shadows[8]
-                    }
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    transition:
+                      "transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out",
+                    "&:hover": {
+                      transform: "translateY(-4px)",
+                      boxShadow: (theme) => theme.shadows[8],
+                    },
                   }}
                 >
                   <CardMedia
@@ -329,22 +310,29 @@ const Album = ({ album_id_safe }) => {
                     height="200"
                     image={image.link}
                     alt={image.title}
-                    sx={{ objectFit: 'cover', cursor: 'pointer' }}
-                    onClick={() => window.open(image.link, '_blank')}
+                    sx={{ objectFit: "cover", cursor: "pointer" }}
+                    onClick={() => {
+                      handleClickOpen({
+                        id: image.id,
+                        preview: image.link,
+                        title: image.title,
+                        description: image.description,
+                      });
+                    }}
                   />
                   <CardContent>
                     <Typography variant="h6" noWrap>
                       {image.title || "Untitled"}
                     </Typography>
                     {image.description && (
-                      <Typography 
-                        variant="body2" 
+                      <Typography
+                        variant="body2"
                         color="text.secondary"
                         sx={{
-                          display: '-webkit-box',
+                          display: "-webkit-box",
                           WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                          overflow: 'hidden'
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
                         }}
                       >
                         {image.description}

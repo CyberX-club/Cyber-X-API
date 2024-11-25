@@ -25,6 +25,7 @@ class Endpoints{
     static DEL_IMAGE = (id) => `${Endpoints.BASE_URL}/image/${id}/delete`;
     static DEL_ALBUM = (id) => `${Endpoints.BASE_URL}/album/${id}/delete`;
     static UPLOAD_IMAGE = (id) => `${Endpoints.BASE_URL}/image/${id}/upload`;
+    static EDIT_IMAGE = (id) => `${Endpoints.BASE_URL}/image/${id}/edit`;
     static ADMIN = `${Endpoints.BASE_URL}/admin`;
 
 

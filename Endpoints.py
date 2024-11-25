@@ -25,6 +25,7 @@ class Endpoints:
         delete_image = '/api/image/<image_id>/delete'
         delete_album = '/api/album/<album_id>/delete'
         upload_image = '/api/image/<album_id>/upload'
+        edit_image = '/api/image/<image_id>/edit'
 
         admin = '/api/admin'
 
@@ -77,7 +78,10 @@ class Endpoints:
 
         def __init__(self,api_key):
             self.api_key = api_key
-            self.headers={"Authorization": f"Client-ID {self.api_key}"}
+            self.headers={
+                "Authorization": f"Client-ID {self.api_key}",
+                "Content-Type": "application/json"
+                }
         
         
 
@@ -154,8 +158,21 @@ class Endpoints:
                 method="DELETE",
                 headers=self.headers
             )
+        
+        def edit_image_endpoint(self,image_hash,title=None,description=None):
+            payload = {}
+            if title:
+                payload["title"] = title
+            if description:
+                payload["description"] = description
 
-
+            return Endpoint(
+                url=f"{self.imgur_base_url}/image/{image_hash}",
+                method="POST",
+                headers=self.headers,
+                payload=payload,
+                files={}
+            )
         
     
     

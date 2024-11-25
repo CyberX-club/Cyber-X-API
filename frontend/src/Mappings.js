@@ -18,7 +18,9 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore"; // Icon for accordi
 import Endpoints from "./Endpoints";
 import InfoDialog from "./Dialog";
 import { Auth } from "./Endpoints";
+import Clipboard from "./functions/Clipboard";
 import ContextMenu from "./CustomContextMenu";
+import Loading from "./components/Loading";
 import { defaultContextMenuProps, dfeaultOnClose, handleContextMenu } from "./CustomContextMenu";
 
 
@@ -31,6 +33,9 @@ const Mappings = () => {
 
   const [contextMenuData, setContextMenuData] = useState([]);
 
+  const [loading, setLoading] = useState(true);
+
+
 
   useEffect(() => {
     if (token) {
@@ -40,9 +45,11 @@ const Mappings = () => {
         .then((response) => response.json())
         .then((data) => {
           setMappings(data);
-        });
+        })
+        .finally(() => setLoading(false));
     } else {
       console.error("No token available.");
+      setLoading(false);
     }
   }, [token,reRun]);
 
@@ -65,22 +72,25 @@ const Mappings = () => {
     }
   };
 
+  const handleLinkOpen = (id) => {
+    window.location.href = `/mappings/${id}`;
+  };
+
 
 
   return (
     <Box p={4}>
+      {loading && <Loading />}
       <InfoDialog {...infoDialog} />
       <ContextMenu {...contextMenu} data={contextMenuData} onClose={() => dfeaultOnClose(setContextMenu)} />
       <Typography variant="h4">Mappings</Typography>
       
       {mappings.map((mapping) => (
         <Accordion key={mapping.id} onContextMenu={(e) => handleContextMenu(e, setContextMenu, setContextMenuData, [
-          { title: "Edit", onClick: () => { window.location.href = `/mappings/${mapping._id}`; } },
-          { title: "Delete", onClick: () => { handleDeleteMapping(mapping._id) } }
-        ], () => {
-          setSelectedData(mapping);
-          console.log("Selected data: ", selectedData);
-        } )}>
+          { title: "Copy ID",   onClick: () => Clipboard.copyToClipboard(mapping._id) },
+          { title: "Edit",      onClick: () => handleLinkOpen(mapping._id) },
+          { title: "Delete",    onClick: () => handleDeleteMapping(mapping._id)  }
+        ], () => {} )}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Grid container spacing={2}>
               <Grid size={12}>
